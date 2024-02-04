@@ -1,0 +1,78 @@
+body {
+    width: 50%;
+    margin: auto;
+    padding: 75px 10px 10px 10px;
+}
+
+#search-input {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    box-sizing: border-box;
+}
+
+#nmap-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#nmap-table th,
+#nmap-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+#nmap-table tr:hover {
+    background-color: #bde9ff;
+    /*clicky mouse cursor*/
+    cursor:pointer;
+}
+
+#nmap-table tr:active {
+    background-color: #80ccff;
+}
+
+#nmap-table th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #4CAF50;
+    color: white;
+}
+
+#sidebar {
+    display: block;
+    position: fixed;
+    right: -35%;
+    top: 0;
+    width: 30%;
+    /* Adjust as needed */
+    height: 100%;
+    background-color: white;
+    z-index: 2;
+    padding: 40px;
+    border-left: 1px solid black;
+    /*Rounded Edges and blur and grey background*/
+    border-radius: 0 10px 10px 0;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+    transition: transform 0.5s ease-in-out;
+    transform: translateX(0);
+}
+
+#sidebar.active {
+    transform: translateX(-100%);
+}
+
+#sidebar #nmapResults {
+    width: 100%;
+    height: 50%;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: #373737;
+    color: #d0d0d0;
+    border: 1px solid #ccc;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+}

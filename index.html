@@ -1,0 +1,39 @@
+<!--nmap 192.168.1.8 192.168.4.1 192.168.5.0/28 192.168.8.1 -F -sV-->
+
+<!DOCTYPE html>
+
+<head>
+    <title>N-map gui</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="script.js"></script>
+</head>
+
+<body>
+    <div id="file-input">
+        <label for="nmap-file">Choose an nmap output file:</label>
+        <input type="file" id="nmap-file" name="nmap-file" />
+        <button onclick="parseNmapFile()">Parse</button>
+    </div>
+
+    <div id="sidebar">
+        <h3 id="hostname"></h3>
+        <p id="ip"></p>
+        <p id="ports"></p>
+        <p id="services"></p>
+        <p>Nmap Output:</p>
+        <pre id="nmapResults"></pre>
+    </div>
+
+    <br />
+    <!-- search bar -->
+    <input type="text" id="search-input" onkeydown="search()" placeholder="Search for Hostname, IP, Port Number, or Service...">
+
+    <!-- Table with name nmap-table -->
+    <table id="nmap-table">
+        <tr>
+            <th>Hostname</th>
+            <th>IP</th>
+            <th>Ports and Services</th>
+        </tr>
+    </table>
+</body>
