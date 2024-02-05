@@ -11,11 +11,11 @@
 <body>
     <div id="file-input">
         <label for="nmap-file">Choose an nmap output file:</label>
-        <input type="file" id="nmap-file" name="nmap-file" />
-        <button onclick="parseNmapFile()">Parse</button>
+        <input type="file" id="nmap-file" name="nmap-file"/>
     </div>
 
     <div id="sidebar">
+        <div id="back-button" onclick="deactivateSidebar()">&rarr;</div>
         <h3 id="hostname"></h3>
         <p id="ip"></p>
         <p id="ports"></p>

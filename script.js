@@ -1,7 +1,57 @@
 devices = [] // contains {hostname, ip, [ports_services], nmap_result}
 
+// wait for DOM to load
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.getElementById('nmap-file').addEventListener('change', parseNmapFile);
+
+    var table = document.getElementById('nmap-table');
+    var sidebar = document.getElementById('sidebar');
+
+    table.addEventListener('click', function (e) {
+        var target = e.target;
+        while (target && target.nodeName !== 'TR') {
+            target = target.parentElement;
+        }
+        if (target) {
+            var cells = target.getElementsByTagName('td');
+            // get device from ip
+            var ip = cells[1].innerHTML;
+            // search for device in devices
+
+            var device = findDeviceByIp(ip);
+            // console.log(device);
+            var hostname = device.hostname;
+            var ports = [];
+            var services = [];
+            for (var i = 0; i < device.ports_services.length; i++) {
+                ports.push(device.ports_services[i].port);
+                services.push(device.ports_services[i].service);
+            }
+            var nmapResult = device.nmap_result;
+
+            document.getElementById('hostname').innerHTML = hostname;
+            document.getElementById('ip').innerHTML = ip;
+            document.getElementById('ports').innerHTML = ports;
+            document.getElementById('services').innerHTML = services;
+            document.getElementById('nmapResults').innerHTML = nmapResult;
+
+            sidebar.classList.add('active');
+        }
+    });
+
+    // Optional: Close the sidebar when clicking outside of it
+    document.addEventListener('click', function (e) {
+        if (!table.contains(e.target) && !sidebar.contains(e.target)) {
+            sidebar.classList.remove('active');
+        }
+    });
+
+});
+
 //nmap 192.168.1.8 192.168.4.1 192.168.5.0/28 192.168.8.1 -F -sV
 function parseNmapFile() {
+    devices = [];
     // get get the FileList
     var files = document.getElementById('nmap-file').files;
     if (files.length <= 0) {
@@ -24,6 +74,9 @@ function parseNmapFile() {
                 device = {};
                 device.hostname = line.split('Nmap scan report for ')[1];
                 device.ip = line.split('Nmap scan report for ')[1];
+                if (device.hostname === device.ip) {
+                    device.hostname = 'Unresolved Hostname';
+                }
                 device.ports_services = [];
                 device.nmap_result = '';
             } else if (line.includes('open')) {
@@ -87,61 +140,11 @@ function findDeviceByIp(ip) {
     return devices.find(device => String(device.ip).trim() === String(ip).trim());
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    var table = document.getElementById('nmap-table');
+function deactivateSidebar() {
     var sidebar = document.getElementById('sidebar');
-
-    table.addEventListener('click', function (e) {
-        var target = e.target;
-        while (target && target.nodeName !== 'TR') {
-            target = target.parentElement;
-        }
-        if (target) {
-            var cells = target.getElementsByTagName('td');
-            // get device from ip
-            var ip = cells[1].innerHTML;
-            // search for device in devices
-
-            var device = findDeviceByIp(ip);
-            // console.log(device);
-            var hostname = device.hostname;
-            var ports = [];
-            var services = [];
-            for (var i = 0; i < device.ports_services.length; i++) {
-                ports.push(device.ports_services[i].port);
-                services.push(device.ports_services[i].service);
-            }
-            var nmapResult = device.nmap_result;
-
-            /* This is the sidebar content already in the HTML
-            <div id="sidebar">
-                <h3 id="hostname"></h3>
-                <p id="ip"></p>
-                <p id="ports"></p>
-                <p id="services"></p>
-                <p id="nmapResults"></p>
-            </div>
-             */
-
-            document.getElementById('hostname').innerHTML = hostname;
-            document.getElementById('ip').innerHTML = ip;
-            document.getElementById('ports').innerHTML = ports;
-            document.getElementById('services').innerHTML = services;
-            document.getElementById('nmapResults').innerHTML = nmapResult;
-
-            sidebar.classList.add('active');
-            // sidebar.style.display = 'block';
-        }
-    });
-
-    // Optional: Close the sidebar when clicking outside of it
-    document.addEventListener('click', function (e) {
-        if (!table.contains(e.target) && !sidebar.contains(e.target)) {
-            sidebar.classList.remove('active');
-            // sidebar.style.display = 'none';
-        }
-    });
-});
+    sidebar.classList.remove('active');
+    // sidebar.style.display = 'none';
+}
 
 function search() {
     // Get the value from the search input field
