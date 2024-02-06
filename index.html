@@ -9,9 +9,11 @@
 </head>
 
 <body>
+    <h1>Nmap GUI</h1>
     <div id="file-input">
         <label for="nmap-file">Choose an nmap output file:</label>
         <input type="file" id="nmap-file" name="nmap-file"/>
+        <button onclick="parseNmapFile()">Parse</button>
     </div>
 
     <div id="sidebar">
@@ -34,6 +36,7 @@
             <th>Hostname</th>
             <th>IP</th>
             <th>Ports and Services</th>
+            <th>Device Info</th>
         </tr>
     </table>
 </body>

@@ -1,26 +1,40 @@
-devices = [] // contains {hostname, ip, [ports_services], nmap_result}
+devices = [] // contains {hostname, ip, [ports_services], device info, nmap_result}
+
+currentRowOpen = null;
+currentExpandedRow = null;
 
 // wait for DOM to load
 document.addEventListener('DOMContentLoaded', function () {
 
-    document.getElementById('nmap-file').addEventListener('change', parseNmapFile);
-
     var table = document.getElementById('nmap-table');
-    var sidebar = document.getElementById('sidebar');
 
     table.addEventListener('click', function (e) {
         var target = e.target;
+
+        if (target.nodeName === 'TH') {
+            return;
+        }
+
         while (target && target.nodeName !== 'TR') {
             target = target.parentElement;
         }
+
         if (target) {
+            if(target == currentRowOpen) {
+                currentExpandedRow.remove();
+                currentRowOpen.classList.remove('selected');
+                currentRowOpen = null;
+                return;
+            } else if (currentRowOpen) {
+                currentRowOpen.classList.remove('selected');
+                currentExpandedRow.remove();
+            }
+
             var cells = target.getElementsByTagName('td');
             // get device from ip
             var ip = cells[1].innerHTML;
             // search for device in devices
-
             var device = findDeviceByIp(ip);
-            // console.log(device);
             var hostname = device.hostname;
             var ports = [];
             var services = [];
@@ -30,23 +44,92 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             var nmapResult = device.nmap_result;
 
-            document.getElementById('hostname').innerHTML = hostname;
-            document.getElementById('ip').innerHTML = ip;
-            document.getElementById('ports').innerHTML = ports;
-            document.getElementById('services').innerHTML = services;
-            document.getElementById('nmapResults').innerHTML = nmapResult;
+            // Create a new row and insert it after the clicked row
+            var newRow = table.insertRow(target.rowIndex + 1);
+            newRow.classList.add('expanded')
+            currentRowOpen = target;
+            target.classList.add('selected');
+            currentExpandedRow = newRow;
+            var newCell = newRow.insertCell(0);
+            // Span the new cell across all columns
+            newCell.colSpan = target.cells.length;
+            // Populate the new cell with the nmap scan data
+            newCell.innerHTML = `
+                <pre><strong>Nmap Results:</strong> ${nmapResult}</pre>
+            `;
 
-            sidebar.classList.add('active');
+            setTimeout(function () {
+                newRow.classList.add('open');
+            }, 0);
         }
     });
 
-    // Optional: Close the sidebar when clicking outside of it
-    document.addEventListener('click', function (e) {
-        if (!table.contains(e.target) && !sidebar.contains(e.target)) {
-            sidebar.classList.remove('active');
-        }
-    });
+    var headers = table.getElementsByTagName('th');
+    var sortDirection = 1;
 
+    for (let i = 0; i < headers.length; i++) {
+        headers[i].addEventListener('click', function() {
+            var rows = Array.from(table.getElementsByTagName('tr')).slice(1); // Exclude the header row
+            // Sort the rows based on the content of the corresponding cells
+            if (sortDirection === 1) {
+                rows.sort(function(rowA, rowB) {
+                    var cellA = rowA.getElementsByTagName('td')[i].textContent;
+                    var cellB = rowB.getElementsByTagName('td')[i].textContent;
+                    
+                    return cellA.localeCompare(cellB);
+                });
+                // set the header text to indicate the sort direction
+                // check if the header already has a sort direction indicator
+                if (headers[i].innerHTML.includes('▼')) {
+                    headers[i].innerHTML = headers[i].innerHTML.replace('▼', '▲');
+                } else {
+                    headers[i].innerHTML = headers[i].innerHTML + '▲';
+                }
+                // remove the sort direction indicator for the other headers
+                for (let j = 0; j < headers.length; j++) {
+                    if (j !== i) {
+                        headers[j].innerHTML = headers[j].innerHTML.replace('▼', '').replace('▲', '');
+                    }
+                }
+
+                sortDirection = -1;
+            } else {
+                rows.sort(function(rowA, rowB) {
+                    var cellA = rowA.getElementsByTagName('td')[i].textContent;
+                    var cellB = rowB.getElementsByTagName('td')[i].textContent;
+                    
+                    return cellB.localeCompare(cellA);
+                });
+                // set the header text to indicate the sort direction
+                // check if the header already has a sort direction indicator
+                if (headers[i].innerHTML.includes('▲')) {
+                    headers[i].innerHTML = headers[i].innerHTML.replace('▲', '▼');
+                } else {
+                    headers[i].innerHTML = headers[i].innerHTML + '▼';
+                }
+                // remove the sort direction indicator for the other headers
+                for (let j = 0; j < headers.length; j++) {
+                    if (j !== i) {
+                        headers[j].innerHTML = headers[j].innerHTML.replace('▼', '').replace('▲', '');
+                    }
+                }
+
+                sortDirection = 1;
+            }
+
+
+            // Remove the existing rows
+            while (table.rows.length > 1) {
+                table.deleteRow(1);
+            }
+
+            // Add the sorted rows
+            for (let row of rows) {
+                table.appendChild(row);
+            }
+            
+        });
+    }
 });
 
 //nmap 192.168.1.8 192.168.4.1 192.168.5.0/28 192.168.8.1 -F -sV
@@ -86,6 +169,8 @@ function parseNmapFile() {
                     service: parts[3] + ', ' + parts[4]
                 };
                 device.ports_services.push(port_service);
+            } else if (line.includes('Service Info: ')) {
+                device.device_info = line.split('Service Info: ')[1];
             }
             device.nmap_result += line + '\n';
         }
@@ -104,10 +189,12 @@ function updateTable() {
     var hosts = [];
     var ips = [];
     var ports_services = [];
+    var device_info = [];
     for (var i = 0; i < devices.length; i++) {
         hosts.push(devices[i].hostname);
         ips.push(devices[i].ip);
         ports_services.push(devices[i].ports_services);
+        device_info.push(devices[i].device_info);
     }
 
     var table = document.getElementById('nmap-table');
@@ -133,6 +220,11 @@ function updateTable() {
         }
         cell = row.insertCell(2);
         cell.innerHTML = text;
+
+        
+        cell = row.insertCell(3);
+        // device info
+        cell.innerHTML = device_info[i];
     }
 }
 
