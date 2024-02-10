@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (target) {
-            if(target == currentRowOpen) {
+            if (target == currentRowOpen) {
                 currentExpandedRow.remove();
                 currentRowOpen.classList.remove('selected');
                 currentRowOpen = null;
@@ -68,14 +68,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var sortDirection = 1;
 
     for (let i = 0; i < headers.length; i++) {
-        headers[i].addEventListener('click', function() {
+        headers[i].addEventListener('click', function () {
             var rows = Array.from(table.getElementsByTagName('tr')).slice(1); // Exclude the header row
             // Sort the rows based on the content of the corresponding cells
             if (sortDirection === 1) {
-                rows.sort(function(rowA, rowB) {
+                rows.sort(function (rowA, rowB) {
                     var cellA = rowA.getElementsByTagName('td')[i].textContent;
                     var cellB = rowB.getElementsByTagName('td')[i].textContent;
-                    
+
                     return cellA.localeCompare(cellB);
                 });
                 // set the header text to indicate the sort direction
@@ -94,10 +94,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 sortDirection = -1;
             } else {
-                rows.sort(function(rowA, rowB) {
+                rows.sort(function (rowA, rowB) {
                     var cellA = rowA.getElementsByTagName('td')[i].textContent;
                     var cellB = rowB.getElementsByTagName('td')[i].textContent;
-                    
+
                     return cellB.localeCompare(cellA);
                 });
                 // set the header text to indicate the sort direction
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
             for (let row of rows) {
                 table.appendChild(row);
             }
-            
+
         });
     }
 });
@@ -146,41 +146,91 @@ function parseNmapFile() {
 
         // results of the file read
         var device = {}; // contains {hostname, ip, [ports_services], nmap_result}
+        var text = e.target.result;
 
-        var lines = e.target.result.split('\n');
-        for (var i = 0; i < lines.length; i++) {
-            var line = lines[i];
-            if (line.includes('Nmap scan report for ')) {
-                if (device.ip) {
-                    devices.push(device);
+        // create xml parser
+        var parser = new DOMParser();
+        var xmlDoc = parser.parseFromString(text, "text/xml");
+
+        // get the host nodes
+        var hosts = xmlDoc.getElementsByTagName('host');
+        for (var i = 0; i < hosts.length; i++) {
+            var host = hosts[i];
+            var device = {};
+            var ip = host.getElementsByTagName('address')[0].getAttribute('addr');
+            var hostname = '';
+            var ports_services = [];
+            var device_info = '';
+            var nmap_result = '';
+
+            // get the status of the host
+            var status = host.getElementsByTagName('status')[0].getAttribute('state');
+
+            // get the hostnames
+            var hostnames = host.getElementsByTagName('hostnames')[0];
+            if (hostnames) {
+
+                var hostnames = hostnames.getElementsByTagName('hostname');
+                for (var j = 0; j < hostnames.length; j++) {
+                    var name = hostnames[j].getAttribute('name');
+                    hostname += name + ', ';
                 }
-                device = {};
-                device.hostname = line.split('Nmap scan report for ')[1];
-                device.ip = line.split('Nmap scan report for ')[1];
-                if (device.hostname === device.ip) {
-                    device.hostname = 'Unresolved Hostname';
-                }
-                device.ports_services = [];
-                device.nmap_result = '';
-            } else if (line.includes('open')) {
-                var parts = line.split(' ');
-                var port_service = {
-                    port: parts[0].split('/')[0],
-                    service: parts[3] + ', ' + parts[4]
-                };
-                device.ports_services.push(port_service);
-            } else if (line.includes('Service Info: ')) {
-                device.device_info = line.split('Service Info: ')[1];
             }
-            device.nmap_result += line + '\n';
-        }
-        if (device.ip) {
-            devices.push(device);
+
+            // get the ports
+            var ports = host.getElementsByTagName('ports')[0];
+            if (ports) {
+                var ports = ports.getElementsByTagName('port');
+                for (var j = 0; j < ports.length; j++) {
+                    var port = ports[j].getAttribute('portid');
+                    var service = ports[j].getElementsByTagName('service')[0].getAttribute('name');
+                    ports_services.push({ port: port, service: service });
+                }
+            }
+
+            // get the os
+            var os = host.getElementsByTagName('os')[0];
+            if (os) {
+                var osmatch = os.getElementsByTagName('osmatch')[0];
+                if (osmatch) {
+                    device_info = osmatch.getAttribute('name');
+                }
+            }
+
+            // get the nmap result
+            nmap_result = host.outerHTML;
+
+            device.hostname = hostname;
+            device.ip = ip;
+            device.ports_services = ports_services;
+            device.device_info = device_info;
+            device.nmap_result = nmap_result;
+
+            // if the device is not down, add it to the devices array
+            if (status !== 'down')
+                devices.push(device);
         }
 
         updateTable(devices);
     };
     fr.readAsText(files.item(0));
+}
+
+function outputTargets() {
+    // output ips from devices
+    var ips = [];
+    for (var i = 0; i < devices.length; i++) {
+        ips.push(devices[i].ip);
+    }
+    console.log(ips);
+    // download the file
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(ips.join('\n')));
+    element.setAttribute('download', 'targets.txt');
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
 }
 
 function updateTable() {
@@ -221,7 +271,7 @@ function updateTable() {
         cell = row.insertCell(2);
         cell.innerHTML = text;
 
-        
+
         cell = row.insertCell(3);
         // device info
         cell.innerHTML = device_info[i];

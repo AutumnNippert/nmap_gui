@@ -16,8 +16,9 @@
     <h1>Nmap GUI</h1>
     <div id="file-input">
         <label for="nmap-file">Choose an nmap output file:</label>
-        <input type="file" id="nmap-file" name="nmap-file"/>
+        <input type="file" id="nmap-file" name="nmap-file" accept="text/xml"/>
         <button onclick="parseNmapFile()">Parse</button>
+        <button onclick="outputTargets()">Output Targets</button>
     </div>
 
     <br />
